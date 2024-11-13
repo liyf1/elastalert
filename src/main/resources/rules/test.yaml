@@ -1,0 +1,45 @@
+# Rule name, must be unique
+name: Test Alert
+
+# Type of alert.
+type: any
+
+realert:
+  seconds: 300
+
+num_events: 5
+timeframe: 1h
+
+run_every:
+  seconds: 5
+
+# Index to search, wildcard supported
+index: chatppt-2024.11.07
+timestamp_field: '@timestamp'
+
+# A list of elasticsearch filters used for find events
+filter:
+  - query:
+      query_string:
+        query: "log_level:\"ERROR\""
+
+include:
+  - '@timestamp'
+  - log_level
+  - log_message
+
+#alert_subject: "Alert: John Doe detected"
+#alert_subject_args:
+#  - name
+#
+#alert_text_type: alert_text_only
+alert_text: "{log_message}"
+alert_text_args:
+  - log_message
+# 告警配置
+alert:
+  - type: dingding
+    webhook_url: "https://oapi.dingtalk.com/robot/send?access_token=faceed14e64ed2243a7abd5cd3b5aa6e6e1405a1109664aff150e0eb5bdc1f04"
+    dingding_users:
+      - "李一凡"
+      - "王世优"

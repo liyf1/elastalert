@@ -1,0 +1,23 @@
+[
+  {
+    "url": "http://localhost:15001/ppt/uploadFile",
+    "method": "POST",
+    "appName": "FileUploader",
+    "headers": {
+      "Authorization": "Bearer token123"
+    },
+    "file_config": {
+      "filePath": "C:\\Users\\41982\\Pictures\\联想截图\\联想截图_20241023104437.png",
+      "paramName": "file",
+      "contentType": "application/png",
+      "isMultipart": true,
+      "extraParams": {
+        "fileName": "测试文件"
+      }
+    },
+    "check_response": {
+    },
+    "title": "文件上传监控",
+    "notification_user": "user1"
+  }
+]

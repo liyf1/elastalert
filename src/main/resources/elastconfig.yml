@@ -1,0 +1,65 @@
+elasticsearch:
+  host: 106.74.31.253
+  port: 8200
+  scheme: https
+  username: elastic  # 可选
+  password: pikmAmhgMOsy0KgAYQyk # 可选
+  timeout: 30
+  ssl: true
+  # 证书配置（如果启用SSL）
+  ssl_ca_file: /path/to/ca.crt
+  ssl_cert_file: /path/to/client.crt
+  ssl_key_file: /path/to/client.key
+  verify_certs: false
+
+# 规则配置
+rules:
+  folder: src/main/resources/rules
+  # 规则加载配置
+  refresh_interval: 30  # 秒
+  buffer_time: 15m     # 规则缓冲时间
+
+# 线程池配置
+threadpool:
+  scheduler:
+    size: 5   # 调度线程池大小
+  core:
+    size: 10  # 核心线程池大小
+  max:
+    size: 20  # 最大线程池大小
+
+# 告警配置
+alert:
+  index: elastalert_alerts  # 告警记录索引
+  history:
+    index: elastalert_status  # 告警状态索引
+  retry:
+    max_attempts: 3  # 最大重试次数
+    interval: 5m     # 重试间隔
+
+# 健康检查配置
+health:
+  index: elastalert_health
+  check:
+    interval: 60  # 秒
+  max:
+    failures: 3
+    execution_time: 300000  # ms
+  alerts:
+    enabled: true
+  test:
+    index: elastalert_health_check
+
+# 运行时配置
+run:
+  debug: false
+  verbose: false
+  es_debug: false
+
+# 日志配置
+logging:
+  level: INFO
+  format: '%(asctime)s %(levelname)s %(message)s'
+  file: /var/log/elastalert/elastalert.log
+  max_size: 10MB
+  backup_count: 5

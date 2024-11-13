@@ -1,0 +1,21 @@
+[
+  {
+    "email": "chenc329@chinaunicom.cn",
+    "appName": "chatdoc",
+    "title": "获取AccessToken请求失败，请及时查看。",
+    "url": "http://localhost:15001/test123/test",
+    "method": "POST",
+    "need_verify": false,
+    "timeout": 10,
+    "headers": {
+      "Authorization": "{get_tokens_from_aibase()}",
+      "Content-Type": "application/json"
+    },
+    "payload": {
+      "key": "GenerationType",
+      "origin": "{\"id\":\"nodeA\"}"
+    },
+    "check_response": {"subHeadings":[{"subOrderNum":"123","subHeading":"123"}]},
+    "notification_user": "李一凡"
+  }
+]

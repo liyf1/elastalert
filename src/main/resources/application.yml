@@ -1,0 +1,14 @@
+server:
+  port: 15005
+
+spring:
+  application:
+    name: alertmanager
+
+activealert:
+  config:
+    path: src/main/resources/config
+
+elastalert:
+  config:
+    path: src/main/resources/elastconfig.yml
