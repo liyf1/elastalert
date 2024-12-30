@@ -6,6 +6,7 @@ import com.dingtalk.api.request.OapiRobotSendRequest;
 import com.dingtalk.api.response.OapiRobotSendResponse;
 import com.taobao.api.ApiException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -24,8 +25,13 @@ public class DingdingAlert extends AlertConfig {
     }
 
     @Override
-    public void sendAlert(AlertContext context) {
-        DingTalkClient client = new DefaultDingTalkClient(WEBHOOK_URL);
+    public void sendAlert(Rule rule,AlertContext context) {
+        DingTalkClient client;
+        if (StringUtils.isNotBlank(rule.getWebhookUrl())){
+            client = new DefaultDingTalkClient(rule.getWebhookUrl());
+        }else {
+            client = new DefaultDingTalkClient(WEBHOOK_URL);
+        }
         OapiRobotSendRequest request = new OapiRobotSendRequest();
         request.setMsgtype("markdown");
         OapiRobotSendRequest.Markdown markdown = new OapiRobotSendRequest.Markdown();

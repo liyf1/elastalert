@@ -35,7 +35,8 @@ public class ESAlertManager {
     private final ScheduledExecutorService maintenanceExecutor;
 
     // 告警去重缓存
-    private final Cache<String, AlertEntry> alertCache;
+    private final AlertCache alertCache;
+    private static final Duration ALERT_CACHE_TTL = Duration.ofHours(24);
 
     // 限流器
     private final Map<String, RateLimiter> rateLimiters;
@@ -61,10 +62,11 @@ public class ESAlertManager {
         this.maintenanceExecutor = Executors.newSingleThreadScheduledExecutor();
 
         // 初始化缓存
-        this.alertCache = CacheBuilder.newBuilder()
-                .expireAfterWrite(24, TimeUnit.HOURS)
-                .maximumSize(10000)
-                .build();
+//        this.alertCache = CacheBuilder.newBuilder()
+//                .expireAfterWrite(24, TimeUnit.HOURS)
+//                .maximumSize(10000)
+//                .build();
+        this.alertCache = new ESAlertCache(esClient);
 
         this.rateLimiters = new ConcurrentHashMap<>();
         this.pendingAlerts = new LinkedBlockingQueue<>(5000);
@@ -137,7 +139,7 @@ public class ESAlertManager {
     private void executeAlertActions(AlertContext context, Rule rule) {
         for (AlertConfig alertConfig : rule.getAlerts()) {
             try {
-                alertConfig.sendAlert(context);
+                alertConfig.sendAlert(rule,context);
             } catch (Exception e) {
                 logger.error("执行告警动作失败:{}", alertConfig.getType(), e);
             }
@@ -212,8 +214,8 @@ public class ESAlertManager {
      * 检查是否重复告警
      */
     private boolean isDuplicate(String alertId, AlertContext context, Rule rule) {
-        AlertEntry existingAlert = alertCache.getIfPresent(alertId);
-        if (existingAlert == null) {
+        Optional<AlertEntry> existingAlert = alertCache.get(alertId);
+        if (existingAlert.isEmpty()) {
             return false;
         }
 
@@ -222,14 +224,12 @@ public class ESAlertManager {
             return false;
         }
 
-        // 检查是否在收敛时间窗口内
-        boolean withinWindow = Duration.between(existingAlert.getTimestamp(), Instant.now())
+        boolean withinWindow = Duration.between(existingAlert.get().getTimestamp(), Instant.now())
                 .compareTo(realertTime) < 0;
 
-        // 可以添加日志便于问题排查
         if (withinWindow) {
             logger.debug("Alert suppressed - within realert window. AlertId: {}, Last alert: {}, Realert time: {}",
-                    alertId, existingAlert.getTimestamp(), realertTime);
+                    alertId, existingAlert.get().getTimestamp(), realertTime);
         }
 
         return withinWindow;
@@ -343,6 +343,7 @@ public class ESAlertManager {
     private String generateAlertId(AlertContext context, Rule rule) {
         StringBuilder idBuilder = new StringBuilder();
         idBuilder.append(rule.getName());
+        idBuilder.append("_").append(rule.getIndex());
 
         // 添加查询键值
         if (rule.getQueryKey() != null && !context.getMatches().isEmpty()) {
@@ -417,18 +418,17 @@ public class ESAlertManager {
     private void updateAlertCache(String alertId, AlertRecord record) {
         AlertEntry entry = new AlertEntry();
         entry.setId(alertId);
+        entry.setRuleName(record.getRuleName());
         entry.setTimestamp(record.getTimestamp());
 
-        // 保存关键上下文信息用于去重
         Map<String, Object> context = new HashMap<>();
-        context.put("rule_name", record.getRuleName());
         context.put("alert_subject", record.getAlertSubject());
         if (record.getMatches() != null && !record.getMatches().isEmpty()) {
             context.put("matches", record.getMatches());
         }
         entry.setContext(context);
 
-        alertCache.put(alertId, entry);
+        alertCache.put(alertId, entry, ALERT_CACHE_TTL);
     }
 
     /**
@@ -496,27 +496,6 @@ public class ESAlertManager {
     }
 
     /**
-     * AlertEntry类的完整定义
-     */
-    @Data
-    public static class AlertEntry {
-        private String id;
-        private Instant timestamp;
-        private Map<String, Object> context;
-        private AlertStatus status;
-        private int retryCount;
-
-        public void incrementRetryCount() {
-            this.retryCount++;
-        }
-
-        public boolean shouldRetry() {
-            return this.retryCount < 3 &&
-                    this.status == AlertStatus.FAILURE;
-        }
-    }
-
-    /**
      * 关闭管理器
      */
     public void shutdown() {
@@ -535,6 +514,7 @@ public class ESAlertManager {
 
             // 最终刷新
             flushAlerts();
+            alertCache.shutdown();
 
         } catch (Exception e) {
             logger.error("关闭告警管理器失败", e);

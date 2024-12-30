@@ -18,9 +18,9 @@ public class DingdingService {
 
     private static final Logger log = LoggerFactory.getLogger(DingdingService.class);
 
-    public void notification(String title, String appName, String content, String notificationUser) {
+    public void notification(String url,String title, String appName, String content, String notificationUser) {
 
-        DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/robot/send?access_token=28f85ad3df385aa73882338e2f84a751656e67a8bf93d200696f98ddf33e91da");
+        DingTalkClient client = new DefaultDingTalkClient(url);
         OapiRobotSendRequest request = new OapiRobotSendRequest();
         request.setMsgtype("markdown");
         OapiRobotSendRequest.Markdown markdown = new OapiRobotSendRequest.Markdown();

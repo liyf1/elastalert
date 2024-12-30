@@ -469,6 +469,7 @@ public class RuleRunner {
             config.put("webhook", webhookConfig);
         }
 
+
         return config;
     }
 

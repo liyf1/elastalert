@@ -31,46 +31,45 @@ public class Monitor {
     @Autowired
     private DingdingService dingdingService;
 
+
+
     @Autowired
-    private ConfigFilePathManage configFilePathManage;
+    private ScriptsManage scriptsManage;
 
 
-    public void monitor() {
+    public void monitor(Config config) {
         try {
-            List<Config> configs = readConfigsFromFolder(configFilePathManage.activeAlertConfigPath);
+            log.info("Monitoring config: {}", config.getUrl());
+            CompletableFuture.runAsync(() -> {
+                try {
+                    replacePlaceholders(config.getHeaders());
+                    MonitorResult result = processRequest(config);
 
-            for (Config config : configs) {
-                log.info("Monitoring config: {}", config.getUrl());
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        replacePlaceholders(config.getHeaders());
-                        MonitorResult result = processRequest(config);
-
-                        // 检查响应
-                        if (!CollectionUtils.isEmpty(config.getCheckResponse())) {
-                            for (Map.Entry<String, Object> entry : config.getCheckResponse().entrySet()) {
-                                if (result.getData() == null){
-                                    dingdingService.notification(config.getTitle(), config.getAppName(), "返回结果与值不匹配，result:"+result, config.getNotificationUser());
-                                }
-                                Object value = ((JSONObject)result.getData()).get(entry.getKey());
-                                if (!String.valueOf(entry.getValue()).equals(String.valueOf(value))) {
-                                    dingdingService.notification(config.getTitle(), config.getAppName(), "返回结果与值不匹配，result:"+result, config.getNotificationUser());
-                                    break;
-                                }
+                    // 检查响应
+                    if (!CollectionUtils.isEmpty(config.getCheckResponse())) {
+                        for (Map.Entry<String, Object> entry : config.getCheckResponse().entrySet()) {
+                            if (result.getData() == null){
+                                dingdingService.notification(config.getDingdingUrl(),config.getTitle(), config.getAppName(), "返回结果与值不匹配，result:"+result, config.getNotificationUser());
+                            }
+                            Object value = ((JSONObject)result.getData()).get(entry.getKey());
+                            if (!String.valueOf(entry.getValue()).equals(String.valueOf(value))) {
+                                dingdingService.notification(config.getDingdingUrl(),config.getTitle(), config.getAppName(), "返回结果与值不匹配，result:"+result, config.getNotificationUser());
+                                break;
                             }
                         }
-                    } catch (Exception e) {
-                        log.error("Monitor failed for config: {}", config.getUrl(), e);
-                        dingdingService.notification("服务请求失败", config.getAppName(), e.getMessage(), config.getNotificationUser());
                     }
-                });
-            }
+                } catch (Exception e) {
+                    log.error("Monitor failed for config: {}", config.getUrl(), e);
+                    dingdingService.notification(config.getDingdingUrl(),"服务请求失败", config.getAppName(), e.getMessage(), config.getNotificationUser());
+                }
+            });
         } catch (Exception e) {
             log.error("Monitor process failed", e);
         }
     }
 
     private void replacePlaceholders(Object data) {
+        List<String> functions = scriptsManage.getFunctions();
         if (data instanceof Map) {
             Map<String, Object> map = (Map<String, Object>) data;
             for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -80,13 +79,14 @@ public class Monitor {
                     Matcher matcher = pattern.matcher(value);
                     if (matcher.matches()) {
                         String functionName = matcher.group(1);
+                        //去除最后面的()
+                        functionName = functionName.substring(0, functionName.length() - 2);
                         try {
-                            if (functionName.equals("get_tokens_from_aibase()")) {
-                                map.put(entry.getKey(), RegisterFunction.getTokensFromAibase());
-                            } else if (functionName.equals("generate_msg_id()")) {
-                                map.put(entry.getKey(), RegisterFunction.generateMsgId());
+                            if (functions.contains(functionName)) {
+                                String result = scriptsManage.execute(value);
+                                map.put(entry.getKey(), result);
                             }
-                        } catch (IOException e) {
+                        } catch (Exception e) {
                             log.error("Function execution failed: {}", functionName, e);
                         }
                     }

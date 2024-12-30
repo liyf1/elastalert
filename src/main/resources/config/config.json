@@ -16,6 +16,8 @@
       "origin": "{\"id\":\"nodeA\"}"
     },
     "check_response": {"subHeadings":[{"subOrderNum":"123","subHeading":"123"}]},
-    "notification_user": "李一凡"
+    "notification_user": "李一凡",
+    "cron_expression": "* * 0-18 * * *",
+    "dingding_url": "https://oapi.dingtalk.com/robot/send?access_token=28f85ad3df385aa73882338e2f84a751656e67a8bf93d200696f98ddf33e91da1"
   }
 ]

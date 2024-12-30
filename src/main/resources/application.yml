@@ -8,7 +8,12 @@ spring:
 activealert:
   config:
     path: src/main/resources/config
+  python:
+    path: C:/Users/41982/AppData/Local/Programs/Python/Python312/python.exe
+    script:
+      directory: C:/Users/41982/IdeaProjects/alertmanager/src/main/resources/python/scripts
 
 elastalert:
   config:
     path: src/main/resources/elastconfig.yml
+

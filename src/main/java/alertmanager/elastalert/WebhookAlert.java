@@ -70,13 +70,13 @@ public class WebhookAlert extends AlertConfig {
      * 发送告警
      */
     @Override
-    public void sendAlert(AlertContext context) throws AlertException {
+    public void sendAlert(Rule rule,AlertContext context) throws AlertException {
         try {
             // 构建告警内容
             String content = buildAlertContent(context);
 
             // 构建HTTP请求
-            HttpRequest request = buildHttpRequest(content);
+            HttpRequest request = buildHttpRequest(rule.getWebhookUrl(),content);
 
             // 发送请求
             HttpResponse<String> response = sendRequest(request);
@@ -120,7 +120,7 @@ public class WebhookAlert extends AlertConfig {
     /**
      * 构建HTTP请求
      */
-    private HttpRequest buildHttpRequest(String content) {
+    private HttpRequest buildHttpRequest(String webhookUrl,String content) {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(webhookUrl))
                 .timeout(Duration.ofSeconds(10));
@@ -150,7 +150,7 @@ public class WebhookAlert extends AlertConfig {
         HttpResponse<String> response = httpClient.send(request,
                 HttpResponse.BodyHandlers.ofString());
 
-        logger.debug("Webhook响应: status={}, body={}",
+        logger.info("Webhook响应: status={}, body={}",
                 response.statusCode(), response.body());
 
         return response;

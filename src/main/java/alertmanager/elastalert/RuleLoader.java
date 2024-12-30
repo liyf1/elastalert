@@ -282,6 +282,13 @@ public class RuleLoader implements AutoCloseable {
         // 设置规则特定配置
         setRuleTypeSpecificConfig(rule, config);
 
+        if (config.containsKey("alert")){
+            List<Map<String, Object>> alerts = (List<Map<String, Object>>) config.get("alert");
+            for (Map<String, Object> alert : alerts){
+                rule.setWebhookUrl((String) alert.get("webhook_url"));
+            }
+        }
+
         return rule;
     }
 

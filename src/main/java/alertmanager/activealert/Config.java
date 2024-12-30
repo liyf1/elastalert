@@ -23,4 +23,8 @@ public class Config {
     private String notificationUser;
     @JSONField(name = "file_config")
     private FileConfig fileConfig;
+    @JSONField(name = "cron_expression")
+    private String cronExpression;
+    @JSONField(name = "dingding_url")
+    private String dingdingUrl;
 }

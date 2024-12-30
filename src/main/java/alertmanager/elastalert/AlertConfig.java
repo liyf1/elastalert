@@ -35,5 +35,5 @@ public abstract class AlertConfig {
 
     protected String type;
 
-    public abstract void sendAlert(AlertContext context);
+    public abstract void sendAlert(Rule rule,AlertContext context);
 }
